@@ -2,5 +2,5 @@
 window.APP_CONFIG = {
   API_BASE_URL: (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:')
     ? 'http://localhost:4000'
-    : 'https://your-backend.railway.app' // ← 실제 URL로 교체
+    : 'https://hscontract-production.up.railway.app' // ← 실제 URL로 교체
 };
