@@ -78,11 +78,11 @@ const PG_INIT = `
     updated_at TIMESTAMPTZ DEFAULT NOW()
   );
   CREATE TABLE IF NOT EXISTS custom_docs (
-    id         TEXT PRIMARY KEY,
-    stage      TEXT NOT NULL,
-    name       TEXT NOT NULL,
-    desc       TEXT DEFAULT '',
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    id          TEXT PRIMARY KEY,
+    stage       TEXT NOT NULL,
+    name        TEXT NOT NULL,
+    description TEXT DEFAULT '',
+    created_at  TIMESTAMPTZ DEFAULT NOW()
   );
   CREATE TABLE IF NOT EXISTS removed_docs (
     stage TEXT NOT NULL,
@@ -112,11 +112,11 @@ const SQ_INIT = `
     updated_at TEXT DEFAULT (datetime('now'))
   );
   CREATE TABLE IF NOT EXISTS custom_docs (
-    id         TEXT PRIMARY KEY,
-    stage      TEXT NOT NULL,
-    name       TEXT NOT NULL,
-    desc       TEXT DEFAULT '',
-    created_at TEXT DEFAULT (datetime('now'))
+    id          TEXT PRIMARY KEY,
+    stage       TEXT NOT NULL,
+    name        TEXT NOT NULL,
+    description TEXT DEFAULT '',
+    created_at  TEXT DEFAULT (datetime('now'))
   );
   CREATE TABLE IF NOT EXISTS removed_docs (
     stage TEXT NOT NULL,
@@ -160,7 +160,7 @@ function buildDocs(customRows, removedRows) {
   const custom = {}, removed = {};
   for (const r of customRows) {
     if (!custom[r.stage]) custom[r.stage] = [];
-    custom[r.stage].push({ id: r.id, name: r.name, desc: r.desc || '' });
+    custom[r.stage].push({ id: r.id, name: r.name, desc: r.description || '' });
   }
   for (const r of removedRows) {
     if (!removed[r.stage]) removed[r.stage] = [];
@@ -223,13 +223,13 @@ async function clearContent() {
 async function getDocs() {
   if (usePg) {
     const [c, r] = await Promise.all([
-      pgq('SELECT id, stage, name, desc FROM custom_docs ORDER BY created_at'),
+      pgq('SELECT id, stage, name, description FROM custom_docs ORDER BY created_at'),
       pgq('SELECT stage, name FROM removed_docs')
     ]);
     return buildDocs(c, r);
   }
   return buildDocs(
-    sqq('SELECT id, stage, name, desc FROM custom_docs ORDER BY created_at'),
+    sqq('SELECT id, stage, name, description FROM custom_docs ORDER BY created_at'),
     sqq('SELECT stage, name FROM removed_docs')
   );
 }
@@ -241,8 +241,8 @@ async function replaceCustomDocs(obj) {
       await qx('DELETE FROM custom_docs');
       for (const [stage, items] of entries) {
         for (const item of (items || [])) {
-          await qx('INSERT INTO custom_docs (id, stage, name, desc) VALUES (?, ?, ?, ?)',
-            [item.id, stage, item.name, item.desc || '']);
+          await qx('INSERT INTO custom_docs (id, stage, name, description) VALUES (?, ?, ?, ?)',
+            [item.id, stage, item.name, item.description || item.desc || '']);
         }
       }
     });
@@ -251,8 +251,8 @@ async function replaceCustomDocs(obj) {
       sqq('DELETE FROM custom_docs');
       for (const [stage, items] of entries) {
         for (const item of (items || [])) {
-          sqq('INSERT INTO custom_docs (id, stage, name, desc) VALUES (?, ?, ?, ?)',
-            [item.id, stage, item.name, item.desc || '']);
+          sqq('INSERT INTO custom_docs (id, stage, name, description) VALUES (?, ?, ?, ?)',
+            [item.id, stage, item.name, item.description || item.desc || '']);
         }
       }
     });
@@ -293,8 +293,8 @@ async function clearRemovedDocs() {
 async function addCustomDoc(stage, name, desc) {
   const id = uid('doc');
   usePg
-    ? await pgq('INSERT INTO custom_docs (id, stage, name, desc) VALUES (?, ?, ?, ?)', [id, stage, name, desc || ''])
-    : sqq('INSERT INTO custom_docs (id, stage, name, desc) VALUES (?, ?, ?, ?)', [id, stage, name, desc || '']);
+    ? await pgq('INSERT INTO custom_docs (id, stage, name, description) VALUES (?, ?, ?, ?)', [id, stage, name, desc || ''])
+    : sqq('INSERT INTO custom_docs (id, stage, name, description) VALUES (?, ?, ?, ?)', [id, stage, name, desc || '']);
   return { id, name, desc: desc || '' };
 }
 
