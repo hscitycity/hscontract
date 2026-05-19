@@ -1,55 +1,609 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>화성시 계약 업무 길잡이 — 관리자</title>
-  <script src="config.js"></script>
-  <style>
-    body {
-      font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
-      margin: 0;
-      padding: 2rem;
-      background: #f5f7fa;
-      color: #1a1a2e;
-    }
-    header {
-      background: #1a3a5c;
-      color: #fff;
-      padding: 1.2rem 2rem;
-      border-radius: 8px;
-      margin-bottom: 2rem;
-    }
-    header h1 { margin: 0; font-size: 1.4rem; }
-    header p  { margin: 0.3rem 0 0; font-size: 0.85rem; opacity: 0.75; }
-    .card {
-      background: #fff;
-      border-radius: 8px;
-      padding: 1.5rem;
-      box-shadow: 0 1px 4px rgba(0,0,0,.08);
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>화성시 계약 길잡이 — 관리자</title>
+<script src="config.js"></script>
+<style>
+:root {
+  --primary: #1F4E79;
+  --secondary: #2E75B6;
+  --bg: #F5F7FA;
+  --card: #fff;
+  --border: #E5E7EB;
+  --border-strong: #D1D5DB;
+  --text: #111827;
+  --text-mute: #6B7280;
+  --danger: #DC2626;
+  --success: #16A34A;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Malgun Gothic', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg); color: var(--text); font-size: 14px;
+}
+
+/* ── 로그인 ───────────────────────────────────────── */
+#login-screen {
+  min-height: 100vh; display: flex;
+  align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+}
+.login-card {
+  background: #fff; padding: 40px; border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.2); width: 360px;
+}
+.login-logo { text-align: center; margin-bottom: 24px; }
+.login-logo .badge {
+  display: inline-block; background: var(--primary); color: #fff;
+  padding: 8px 18px; border-radius: 20px; font-size: 13px; font-weight: 700;
+}
+.login-card h1 { font-size: 18px; color: var(--primary); margin-bottom: 4px; }
+.login-card .sub { font-size: 12px; color: var(--text-mute); margin-bottom: 24px; }
+#login-error { color: var(--danger); font-size: 12px; margin-top: 8px; min-height: 16px; }
+.login-submit {
+  width: 100%; padding: 11px; background: var(--primary); color: #fff;
+  border: none; border-radius: 7px; font-size: 15px; font-weight: 700;
+  cursor: pointer; margin-top: 4px; font-family: inherit;
+}
+.login-submit:hover { background: #163a5e; }
+
+/* ── 공통 인풋 ────────────────────────────────────── */
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text-mute); margin-bottom: 4px; }
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%; padding: 9px 12px; border: 1px solid var(--border-strong);
+  border-radius: 6px; font-size: 14px; font-family: inherit; outline: none;
+  transition: border-color .15s;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  border-color: var(--secondary);
+}
+
+/* ── 대시보드 ─────────────────────────────────────── */
+#dashboard { display: none; min-height: 100vh; flex-direction: column; }
+header {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  color: #fff; padding: 12px 28px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,.1);
+}
+.brand { font-weight: 700; font-size: 16px; }
+.brand small { font-size: 11px; opacity: .75; margin-left: 8px; }
+#logout-btn {
+  background: rgba(255,255,255,.15); color: #fff;
+  border: 1px solid rgba(255,255,255,.3);
+  padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px;
+  font-family: inherit;
+}
+#logout-btn:hover { background: rgba(255,255,255,.25); }
+
+/* ── 탭 네비 ──────────────────────────────────────── */
+.tab-nav {
+  background: #fff; border-bottom: 2px solid var(--border);
+  padding: 0 28px; display: flex; gap: 0; position: sticky; top: 49px; z-index: 99;
+}
+.tab-btn {
+  padding: 13px 22px; border: none; border-bottom: 3px solid transparent;
+  background: none; cursor: pointer; font-size: 14px; font-weight: 600;
+  color: var(--text-mute); margin-bottom: -2px; transition: all .15s;
+  font-family: inherit;
+}
+.tab-btn:hover { color: var(--secondary); }
+.tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+/* ── 패널 ─────────────────────────────────────────── */
+main { padding: 28px; max-width: 1100px; }
+.tab-panel { display: none; }
+.panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 18px;
+}
+.panel-header h2 { font-size: 16px; color: var(--primary); font-weight: 700; }
+.panel-desc { font-size: 12px; color: var(--text-mute); margin-top: 3px; }
+
+/* ── 테이블 ───────────────────────────────────────── */
+.tbl-wrap { background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+table { width: 100%; border-collapse: collapse; }
+th {
+  background: #F8FAFC; padding: 10px 14px; text-align: left;
+  font-size: 12px; font-weight: 600; color: var(--text-mute);
+  border-bottom: 1px solid var(--border);
+}
+td {
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: #FAFBFC; }
+code {
+  font-family: 'Consolas', 'Courier New', monospace;
+  background: #F3F4F6; padding: 2px 7px; border-radius: 4px; font-size: 12px;
+}
+.preview { color: var(--text-mute); font-size: 12px; max-width: 320px; }
+.edit-row td { background: #F8FAFC !important; padding: 12px 14px; }
+.edit-row textarea {
+  width: 100%; height: 110px; padding: 8px; font-size: 13px;
+  border: 1px solid var(--border-strong); border-radius: 6px;
+  font-family: 'Consolas', 'Courier New', monospace; resize: vertical; outline: none;
+}
+.edit-row textarea:focus { border-color: var(--secondary); }
+.edit-actions { display: flex; gap: 8px; margin-top: 8px; }
+
+/* ── 버튼 ─────────────────────────────────────────── */
+.btn {
+  padding: 7px 14px; border: 1px solid var(--border-strong); border-radius: 6px;
+  background: #fff; cursor: pointer; font-size: 13px; font-weight: 600;
+  font-family: inherit; transition: all .15s; line-height: 1.4;
+}
+.btn:hover { background: #F9FAFB; }
+.btn-primary { background: var(--secondary); color: #fff; border-color: var(--secondary); }
+.btn-primary:hover { background: var(--primary); border-color: var(--primary); }
+.btn-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+.btn-danger:hover { background: #B91C1C; border-color: #B91C1C; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+
+/* ── 통계 카드 ────────────────────────────────────── */
+.stats-cards { display: flex; gap: 16px; margin-bottom: 28px; }
+.stat-card {
+  background: #fff; border-radius: 10px; padding: 22px 32px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.07); text-align: center; flex: 1;
+  border-top: 3px solid var(--secondary);
+}
+.stat-num { font-size: 32px; font-weight: 700; color: var(--primary); }
+.stat-label { font-size: 12px; color: var(--text-mute); margin-top: 4px; font-weight: 600; }
+
+/* ── 섹션 제목 ────────────────────────────────────── */
+.section-title {
+  font-size: 14px; font-weight: 700; color: var(--primary);
+  margin: 24px 0 10px; padding-bottom: 6px;
+  border-bottom: 2px solid var(--border);
+}
+
+/* ── 모달 ─────────────────────────────────────────── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.45); align-items: center; justify-content: center;
+  z-index: 1000;
+}
+.modal {
+  background: #fff; border-radius: 10px; padding: 28px; width: 480px;
+  max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,.18);
+}
+.modal h3 { font-size: 16px; color: var(--primary); margin-bottom: 20px; }
+.modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+
+/* ── 빈 상태 ──────────────────────────────────────── */
+.empty-state { color: var(--text-mute); padding: 32px; text-align: center; font-size: 13px; }
+
+/* ── 토스트 ───────────────────────────────────────── */
+#toast {
+  position: fixed; bottom: 28px; right: 28px;
+  background: #111827; color: #fff; padding: 11px 20px;
+  border-radius: 8px; font-size: 13px; opacity: 0;
+  transition: opacity .3s; z-index: 2000; pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,.2);
+}
+
+/* ── 로딩 ─────────────────────────────────────────── */
+.loading { color: var(--text-mute); padding: 24px 0; font-size: 13px; }
+</style>
 </head>
 <body>
-  <header>
-    <h1>화성시 계약 업무 길잡이 — 관리자</h1>
-    <p>계약 절차 안내 콘텐츠 및 시스템 관리</p>
-  </header>
-  <div class="card">
-    <h2>관리자 대시보드</h2>
-    <p>이 화면은 관리자 전용 페이지입니다. 콘텐츠 관리 기능은 순차적으로 추가될 예정입니다.</p>
-    <ul>
-      <li>계약 절차 항목 관리</li>
-      <li>공지사항 관리</li>
-      <li>사용자 접근 통계</li>
-    </ul>
+
+<!-- ══════════════════════════════════════════════════════ 로그인 -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo"><span class="badge">화성시 계약 길잡이</span></div>
+    <h1>관리자 로그인</h1>
+    <p class="sub">관리자 계정으로 로그인하세요.</p>
+    <form id="login-form" autocomplete="off">
+      <div class="form-group">
+        <label>아이디</label>
+        <input id="username" type="text" placeholder="username" autocomplete="username" />
+      </div>
+      <div class="form-group">
+        <label>비밀번호</label>
+        <input id="password" type="password" placeholder="password" autocomplete="current-password" />
+      </div>
+      <p id="login-error"></p>
+      <button type="submit" class="login-submit">로그인</button>
+    </form>
   </div>
-  <script>
-    const API = window.APP_CONFIG?.API_BASE_URL || 'http://localhost:4000';
-    fetch(`${API}/health`)
-      .then(r => r.json())
-      .then(d => console.log('[admin] API 연결 확인:', d))
-      .catch(() => console.warn('[admin] API 서버에 연결할 수 없습니다.'));
-  </script>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ 대시보드 -->
+<div id="dashboard">
+  <header>
+    <div class="brand">화성시 계약 길잡이 <small>관리자 대시보드</small></div>
+    <button id="logout-btn" onclick="logout()">로그아웃</button>
+  </header>
+  <nav class="tab-nav">
+    <button class="tab-btn active" data-tab="content">콘텐츠 편집</button>
+    <button class="tab-btn" data-tab="docs">서류 관리</button>
+    <button class="tab-btn" data-tab="alerts">주의사항 관리</button>
+    <button class="tab-btn" data-tab="stats">접속 통계</button>
+  </nav>
+  <main>
+    <div id="panel-content" class="tab-panel"></div>
+    <div id="panel-docs"    class="tab-panel"></div>
+    <div id="panel-alerts"  class="tab-panel"></div>
+    <div id="panel-stats"   class="tab-panel"></div>
+  </main>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ 모달 -->
+<div id="modal-overlay" class="modal-overlay" onclick="onOverlayClick(event)">
+  <div class="modal">
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- 토스트 -->
+<div id="toast"></div>
+
+<script>
+// ─── 설정 ────────────────────────────────────────────────────────────────────
+const API_BASE = (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) || 'http://localhost:4000';
+
+// ─── 인증 ────────────────────────────────────────────────────────────────────
+function getToken()      { return sessionStorage.getItem('admin_token'); }
+function setToken(t)     { sessionStorage.setItem('admin_token', t); }
+function clearToken()    { sessionStorage.removeItem('admin_token'); }
+function authHeaders()   {
+  return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() };
+}
+
+async function authFetch(path, opts) {
+  opts = opts || {};
+  const res = await fetch(API_BASE + path, {
+    ...opts,
+    headers: Object.assign({}, authHeaders(), opts.headers || {})
+  });
+  if (res.status === 401) { logout(); return null; }
+  return res;
+}
+
+// ─── 로그인 ──────────────────────────────────────────────────────────────────
+document.getElementById('login-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  if (!username || !password) { errEl.textContent = '아이디와 비밀번호를 입력하세요.'; return; }
+  try {
+    const res = await fetch(API_BASE + '/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setToken(data.token);
+      showDashboard();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      errEl.textContent = err.error || '로그인에 실패했습니다.';
+    }
+  } catch (e) {
+    errEl.textContent = '서버에 연결할 수 없습니다. 백엔드 서버를 확인하세요.';
+  }
+});
+
+function logout() {
+  clearToken();
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('password').value = '';
+}
+
+function showDashboard() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'flex';
+  document.getElementById('dashboard').style.flexDirection = 'column';
+  activateTab('content');
+}
+
+// ─── 탭 ──────────────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() { activateTab(this.dataset.tab); });
+});
+
+function activateTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+  ['content','docs','alerts','stats'].forEach(function(t) {
+    var el = document.getElementById('panel-' + t);
+    el.style.display = t === tab ? 'block' : 'none';
+  });
+  if (tab === 'content') loadContent();
+  if (tab === 'docs')    loadDocs();
+  if (tab === 'alerts')  loadAlerts();
+  if (tab === 'stats')   loadStats();
+}
+
+// ─── HTML 이스케이프 ──────────────────────────────────────────────────────────
+function esc(s) {
+  return (s == null ? '' : String(s))
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ─── 콘텐츠 편집 탭 ──────────────────────────────────────────────────────────
+async function loadContent() {
+  var el = document.getElementById('panel-content');
+  el.innerHTML = '<p class="loading">로딩 중...</p>';
+
+  var res = await authFetch('/api/content');
+  if (!res) return;
+  var body = await res.json();
+  var data = body.data || {};
+  var meta = body.meta || {};
+  var keys = Object.keys(data).filter(function(k) { return k !== '_savedAt'; });
+
+  var html = '<div class="panel-header"><h2>콘텐츠 편집 관리</h2></div>';
+  if (keys.length === 0) {
+    html += '<div class="empty-state">저장된 편집 콘텐츠가 없습니다.<br><small>사용자 앱에서 편집모드로 내용을 저장하면 여기에 표시됩니다.</small></div>';
+    el.innerHTML = html;
+    return;
+  }
+
+  html += '<div class="tbl-wrap"><table><thead><tr><th style="width:220px">키 (data-ekey)</th><th>현재값 미리보기</th><th style="width:150px">수정일</th><th style="width:70px"></th></tr></thead><tbody>';
+  keys.forEach(function(key) {
+    var val = data[key] || '';
+    var preview = val.replace(/<[^>]+>/g, '').substring(0, 70);
+    var updatedAt = meta[key] ? new Date(meta[key].updatedAt).toLocaleString('ko-KR') : '-';
+    html += '<tr id="row-' + esc(key) + '">'
+      + '<td><code>' + esc(key) + '</code></td>'
+      + '<td class="preview">' + esc(preview) + (val.length > 70 ? '…' : '') + '</td>'
+      + '<td style="font-size:12px;color:var(--text-mute)">' + updatedAt + '</td>'
+      + '<td><button class="btn btn-sm" onclick="editContent(\'' + esc(key) + '\')">편집</button></td>'
+      + '</tr>'
+      + '<tr id="edit-row-' + esc(key) + '" class="edit-row" style="display:none">'
+      + '<td colspan="4">'
+      + '<textarea id="edit-ta-' + esc(key) + '">' + esc(val) + '</textarea>'
+      + '<div class="edit-actions">'
+      + '<button class="btn btn-primary btn-sm" onclick="saveContent(\'' + esc(key) + '\')">저장</button>'
+      + '<button class="btn btn-sm" onclick="cancelEdit(\'' + esc(key) + '\')">취소</button>'
+      + '</div></td></tr>';
+  });
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+}
+
+function editContent(key) {
+  document.getElementById('edit-row-' + key).style.display = '';
+  document.getElementById('edit-ta-' + key).focus();
+}
+
+function cancelEdit(key) {
+  document.getElementById('edit-row-' + key).style.display = 'none';
+}
+
+async function saveContent(key) {
+  var val = document.getElementById('edit-ta-' + key).value;
+  var res = await authFetch('/api/content/' + encodeURIComponent(key), {
+    method: 'PUT',
+    body: JSON.stringify({ value: val })
+  });
+  if (res && res.ok) {
+    cancelEdit(key);
+    loadContent();
+    showToast('✅ 저장됐습니다.');
+  } else {
+    showToast('❌ 저장 실패');
+  }
+}
+
+// ─── 서류 관리 탭 ─────────────────────────────────────────────────────────────
+var STAGE_LABELS = { pre:'① 계약 전', sign:'② 계약체결', start:'③ 착수/납품', inspect:'④ 검사·준공', pay:'⑤ 대가청구' };
+var STAGE_KEYS = ['pre','sign','start','inspect','pay'];
+
+async function loadDocs() {
+  var el = document.getElementById('panel-docs');
+  el.innerHTML = '<p class="loading">로딩 중...</p>';
+
+  var res = await authFetch('/api/docs');
+  if (!res) return;
+  var data = await res.json();
+  var custom = data.custom || {};
+
+  var html = '<div class="panel-header"><h2>서류 관리</h2>'
+    + '<button class="btn btn-primary" onclick="openDocModal()">➕ 서류 추가</button></div>';
+
+  var hasAny = false;
+  STAGE_KEYS.forEach(function(stage) {
+    var docs = custom[stage] || [];
+    if (!docs.length) return;
+    hasAny = true;
+    html += '<div class="section-title">' + STAGE_LABELS[stage] + '</div>'
+      + '<div class="tbl-wrap" style="margin-bottom:16px"><table>'
+      + '<thead><tr><th>서류명</th><th>설명</th><th style="width:80px">ID</th><th style="width:70px"></th></tr></thead><tbody>';
+    docs.forEach(function(doc) {
+      html += '<tr>'
+        + '<td><b>' + esc(doc.name) + '</b></td>'
+        + '<td style="color:var(--text-mute);font-size:13px">' + esc(doc.desc || '-') + '</td>'
+        + '<td><code>' + esc(doc.id) + '</code></td>'
+        + '<td><button class="btn btn-danger btn-sm" onclick="deleteDoc(\'' + esc(stage) + '\',\'' + esc(doc.id) + '\')">삭제</button></td>'
+        + '</tr>';
+    });
+    html += '</tbody></table></div>';
+  });
+
+  if (!hasAny) html += '<div class="empty-state">추가된 서류가 없습니다.</div>';
+  el.innerHTML = html;
+}
+
+function openDocModal() {
+  var opts = STAGE_KEYS.map(function(s) {
+    return '<option value="' + s + '">' + STAGE_LABELS[s] + '</option>';
+  }).join('');
+  document.getElementById('modal-body').innerHTML = ''
+    + '<h3>➕ 서류 추가</h3>'
+    + '<div class="form-group"><label>단계</label><select id="m-doc-stage">' + opts + '</select></div>'
+    + '<div class="form-group"><label>서류명 *</label><input id="m-doc-name" type="text" placeholder="예: 계약이행보증서" /></div>'
+    + '<div class="form-group"><label>설명</label><input id="m-doc-desc" type="text" placeholder="선택사항" /></div>'
+    + '<div class="modal-footer">'
+    + '<button class="btn btn-primary" onclick="submitDoc()">추가</button>'
+    + '<button class="btn" onclick="closeModal()">취소</button>'
+    + '</div>';
+  openModal();
+  setTimeout(function() { document.getElementById('m-doc-name').focus(); }, 80);
+}
+
+async function submitDoc() {
+  var stage = document.getElementById('m-doc-stage').value;
+  var name  = document.getElementById('m-doc-name').value.trim();
+  var desc  = document.getElementById('m-doc-desc').value.trim();
+  if (!name) { alert('서류명을 입력하세요.'); return; }
+  var res = await authFetch('/api/docs/item', {
+    method: 'POST',
+    body: JSON.stringify({ stage: stage, name: name, desc: desc })
+  });
+  if (res && res.ok) { closeModal(); loadDocs(); showToast('✅ 서류가 추가됐습니다.'); }
+  else showToast('❌ 추가 실패');
+}
+
+async function deleteDoc(stage, id) {
+  if (!confirm('이 서류를 삭제하시겠습니까?')) return;
+  var res = await authFetch('/api/docs/item/' + encodeURIComponent(stage) + '/' + encodeURIComponent(id), { method: 'DELETE' });
+  if (res) { loadDocs(); showToast('🗑️ 삭제됐습니다.'); }
+}
+
+// ─── 주의사항 관리 탭 ─────────────────────────────────────────────────────────
+var ALERT_TYPE_LABELS = { me:'내 담당 (초록)', consult:'협의 필요 (빨강)', warning:'주의 (노랑)', info:'정보 (파랑)' };
+
+async function loadAlerts() {
+  var el = document.getElementById('panel-alerts');
+  el.innerHTML = '<p class="loading">로딩 중...</p>';
+
+  var res = await authFetch('/api/alerts');
+  if (!res) return;
+  var alerts = await res.json();
+
+  var html = '<div class="panel-header"><h2>주의사항 관리</h2>'
+    + '<button class="btn btn-primary" onclick="openAlertModal()">➕ 주의사항 추가</button></div>';
+
+  if (!alerts.length) {
+    html += '<div class="empty-state">추가된 주의사항이 없습니다.</div>';
+  } else {
+    html += '<div class="tbl-wrap"><table>'
+      + '<thead><tr><th style="width:130px">유형</th><th style="width:50px">아이콘</th><th>내용</th><th style="width:100px">등록일</th><th style="width:70px"></th></tr></thead><tbody>';
+    alerts.forEach(function(a) {
+      var preview = (a.text || '').replace(/<[^>]+>/g, '').substring(0, 80);
+      var dateStr = a.createdAt ? new Date(a.createdAt).toLocaleDateString('ko-KR') : '-';
+      html += '<tr>'
+        + '<td><span style="font-size:12px;font-weight:600">' + esc(ALERT_TYPE_LABELS[a.type] || a.type) + '</span></td>'
+        + '<td style="font-size:18px;text-align:center">' + esc(a.icon || '') + '</td>'
+        + '<td style="font-size:13px">' + esc(preview) + ((a.text||'').length > 80 ? '…' : '') + '</td>'
+        + '<td style="font-size:12px;color:var(--text-mute)">' + dateStr + '</td>'
+        + '<td><button class="btn btn-danger btn-sm" onclick="deleteAlert(\'' + esc(a.id) + '\')">삭제</button></td>'
+        + '</tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+  el.innerHTML = html;
+}
+
+function openAlertModal() {
+  var typeOpts = Object.keys(ALERT_TYPE_LABELS).map(function(k) {
+    return '<option value="' + k + '">' + ALERT_TYPE_LABELS[k] + '</option>';
+  }).join('');
+  document.getElementById('modal-body').innerHTML = ''
+    + '<h3>➕ 주의사항 추가</h3>'
+    + '<div class="form-group"><label>유형</label><select id="m-alert-type">' + typeOpts + '</select></div>'
+    + '<div class="form-group"><label>아이콘 (이모지)</label><input id="m-alert-icon" type="text" value="📌" style="width:90px" /></div>'
+    + '<div class="form-group"><label>내용 * <small style="color:var(--text-mute);font-weight:400">(&lt;b&gt;강조&lt;/b&gt; HTML 사용 가능)</small></label>'
+    + '<textarea id="m-alert-text" style="height:90px" placeholder="주의사항 내용을 입력하세요."></textarea></div>'
+    + '<div class="modal-footer">'
+    + '<button class="btn btn-primary" onclick="submitAlert()">추가</button>'
+    + '<button class="btn" onclick="closeModal()">취소</button>'
+    + '</div>';
+  openModal();
+  setTimeout(function() { document.getElementById('m-alert-text').focus(); }, 80);
+}
+
+async function submitAlert() {
+  var type = document.getElementById('m-alert-type').value;
+  var icon = document.getElementById('m-alert-icon').value.trim() || '📌';
+  var text = document.getElementById('m-alert-text').value.trim();
+  if (!text) { alert('내용을 입력하세요.'); return; }
+  var res = await authFetch('/api/alerts/item', {
+    method: 'POST',
+    body: JSON.stringify({ type: type, icon: icon, text: text })
+  });
+  if (res && res.ok) { closeModal(); loadAlerts(); showToast('✅ 추가됐습니다.'); }
+  else showToast('❌ 추가 실패');
+}
+
+async function deleteAlert(id) {
+  if (!confirm('이 주의사항을 삭제하시겠습니까?')) return;
+  var res = await authFetch('/api/alerts/item/' + encodeURIComponent(id), { method: 'DELETE' });
+  if (res) { loadAlerts(); showToast('🗑️ 삭제됐습니다.'); }
+}
+
+// ─── 접속 통계 탭 ─────────────────────────────────────────────────────────────
+async function loadStats() {
+  var el = document.getElementById('panel-stats');
+  el.innerHTML = '<p class="loading">로딩 중...</p>';
+
+  var res = await authFetch('/api/stats');
+  if (!res) return;
+  var data = await res.json();
+
+  var html = '<div class="panel-header"><h2>접속 통계</h2>'
+    + '<button class="btn btn-sm" onclick="loadStats()">🔄 새로고침</button></div>'
+    + '<div class="stats-cards">'
+    + '<div class="stat-card"><div class="stat-num">' + (data.today||0) + '</div><div class="stat-label">오늘</div></div>'
+    + '<div class="stat-card"><div class="stat-num">' + (data.week||0) + '</div><div class="stat-label">이번 주</div></div>'
+    + '<div class="stat-card"><div class="stat-num">' + (data.month||0) + '</div><div class="stat-label">이번 달</div></div>'
+    + '<div class="stat-card"><div class="stat-num">' + (data.total||0) + '</div><div class="stat-label">전체</div></div>'
+    + '</div>'
+    + '<div class="section-title">최근 접속 기록 (최대 20건)</div>';
+
+  var recent = data.recent || [];
+  if (!recent.length) {
+    html += '<div class="empty-state">접속 기록이 없습니다.</div>';
+  } else {
+    html += '<div class="tbl-wrap"><table>'
+      + '<thead><tr><th>시간</th><th>IP</th><th>페이지</th><th>브라우저</th></tr></thead><tbody>';
+    recent.forEach(function(log) {
+      var ts = log.timestamp ? new Date(log.timestamp).toLocaleString('ko-KR') : '-';
+      var ua = (log.userAgent || '').substring(0, 65);
+      html += '<tr>'
+        + '<td style="white-space:nowrap;font-size:13px">' + esc(ts) + '</td>'
+        + '<td><code>' + esc(log.ip || '-') + '</code></td>'
+        + '<td style="font-size:13px">' + esc(log.page || '/') + '</td>'
+        + '<td style="font-size:11px;color:var(--text-mute)">' + esc(ua) + '</td>'
+        + '</tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+  el.innerHTML = html;
+}
+
+// ─── 모달 ─────────────────────────────────────────────────────────────────────
+function openModal()  { document.getElementById('modal-overlay').style.display = 'flex'; }
+function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+function onOverlayClick(e) { if (e.target.id === 'modal-overlay') closeModal(); }
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
+
+// ─── 토스트 ───────────────────────────────────────────────────────────────────
+var _toastTimer = null;
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(function() { t.style.opacity = '0'; }, 2800);
+}
+
+// ─── 초기화 ───────────────────────────────────────────────────────────────────
+if (getToken()) showDashboard();
+</script>
 </body>
 </html>

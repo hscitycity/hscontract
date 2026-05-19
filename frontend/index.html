@@ -1168,6 +1168,14 @@ body.edit-mode #edit-mode-btn {
 </div>
 
 <script>
+// ── API 서버 URL — 환경에 따라 자동 전환 ──────────────────────────────────────
+// 배포 후 아래 Railway URL을 실제 백엔드 주소로 교체하세요.
+const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:')
+  ? 'http://localhost:4000'
+  : 'https://your-backend.railway.app'; // ← 실제 URL로 교체
+</script>
+<script src="api.js"></script>
+<script>
 // ═══════════════════════════════════════════════════
 // 상태 관리
 // ═══════════════════════════════════════════════════
@@ -3381,32 +3389,62 @@ var REMOVED_DOCS_KEY = 'hwaseong_removed_docs_v1'; // 사용자가 숨긴 기본
 var STAGE_LABELS = { pre: '① 계약 전', sign: '② 계약체결', start: '③ 착수/납품', inspect: '④ 검사·준공', pay: '⑤ 대가청구' };
 var editingDocKey = null; // {stage, id} 편집 중인 커스텀 서류
 
+// ─── 인메모리 캐시 (페이지 로드 시 API에서 채워짐) ──────────────────────────
+var _customDocsCache = {};
+var _removedDocsCache = {};
+var _customAlertsCache = [];
+var _editContentCache = null;
+
+async function initFromAPI() {
+  var results = await Promise.allSettled([
+    API.getDocs(),
+    API.getAlerts(),
+    API.getContent()
+  ]);
+  if (results[0].status === 'fulfilled') {
+    _customDocsCache  = results[0].value.custom  || {};
+    _removedDocsCache = results[0].value.removed || {};
+  } else {
+    try { _customDocsCache  = JSON.parse(localStorage.getItem(CUSTOM_DOCS_KEY)  || '{}') || {}; } catch(e) {}
+    try { _removedDocsCache = JSON.parse(localStorage.getItem(REMOVED_DOCS_KEY) || '{}') || {}; } catch(e) {}
+  }
+  if (results[1].status === 'fulfilled') {
+    _customAlertsCache = results[1].value || [];
+  } else {
+    try { _customAlertsCache = JSON.parse(localStorage.getItem(CUSTOM_ALERTS_KEY) || '[]') || []; } catch(e) {}
+  }
+  if (results[2].status === 'fulfilled') {
+    _editContentCache = results[2].value || null;
+  } else {
+    try { _editContentCache = JSON.parse(localStorage.getItem(EDIT_CONTENT_KEY) || 'null'); } catch(e) {}
+  }
+  applyEditContent();
+}
+
 function loadCustomDocs() {
-  try {
-    var raw = localStorage.getItem(CUSTOM_DOCS_KEY);
-    if (!raw) return {};
-    var obj = JSON.parse(raw);
-    return (obj && typeof obj === 'object') ? obj : {};
-  } catch (err) { return {}; }
+  return _customDocsCache || {};
 }
 
 function saveCustomDocs(obj) {
-  try { localStorage.setItem(CUSTOM_DOCS_KEY, JSON.stringify(obj)); return true; }
-  catch (err) { alert('서류 저장 실패: ' + err.message); return false; }
+  _customDocsCache = obj;
+  API.saveCustomDocs(obj).catch(function(err) {
+    try { localStorage.setItem(CUSTOM_DOCS_KEY, JSON.stringify(obj)); } catch(e) {}
+    console.warn('서류 저장 API 실패 (localStorage 폴백):', err);
+  });
+  return true;
 }
 
 function loadRemovedDocs() {
-  try {
-    var raw = localStorage.getItem(REMOVED_DOCS_KEY);
-    if (!raw) return {};
-    var obj = JSON.parse(raw);
-    return (obj && typeof obj === 'object') ? obj : {};
-  } catch (err) { return {}; }
+  return _removedDocsCache || {};
 }
 
 function saveRemovedDocs(obj) {
-  try { localStorage.setItem(REMOVED_DOCS_KEY, JSON.stringify(obj)); return true; }
-  catch (err) { return false; }
+  _removedDocsCache = obj;
+  API.saveRemovedDocs(obj).catch(function(err) {
+    try { localStorage.setItem(REMOVED_DOCS_KEY, JSON.stringify(obj)); } catch(e) {}
+    console.warn('숨긴서류 저장 API 실패 (localStorage 폴백):', err);
+  });
+  return true;
 }
 
 // 기본 서류 숨기기/복원
@@ -3425,7 +3463,10 @@ function restoreBaseDocs() {
   for (var k in rm) { cnt += (rm[k] ? rm[k].length : 0); }
   if (cnt === 0) { alert('숨긴 기본 서류가 없습니다.'); return; }
   if (!confirm('숨긴 기본 서류 ' + cnt + '건을 모두 복원하시겠습니까?')) return;
-  localStorage.removeItem(REMOVED_DOCS_KEY);
+  _removedDocsCache = {};
+  API.deleteRemovedDocs().catch(function() {
+    try { localStorage.removeItem(REMOVED_DOCS_KEY); } catch(e) {}
+  });
   calculate();
   alert('✅ 숨긴 기본 서류가 모두 복원되었습니다.');
 }
@@ -3507,31 +3548,25 @@ function clearCustomDocs() {
   for (var k in box) { cnt += (box[k] ? box[k].length : 0); }
   if (cnt === 0) { alert('추가한 서류가 없습니다.'); return; }
   if (!confirm('기관에서 추가한 서류 ' + cnt + '건을 모두 삭제하시겠습니까?\n(기본 서류는 영향받지 않습니다)')) return;
-  localStorage.removeItem(CUSTOM_DOCS_KEY);
+  _customDocsCache = {};
+  API.deleteCustomDocs().catch(function() {
+    try { localStorage.removeItem(CUSTOM_DOCS_KEY); } catch(e) {}
+  });
   calculate();
   alert('🗑️ 추가한 서류가 모두 삭제되었습니다.');
 }
 
 function loadCustomAlerts() {
-  try {
-    var raw = localStorage.getItem(CUSTOM_ALERTS_KEY);
-    if (!raw) return [];
-    var arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr : [];
-  } catch (err) {
-    console.warn('주의사항 로드 실패:', err);
-    return [];
-  }
+  return Array.isArray(_customAlertsCache) ? _customAlertsCache : [];
 }
 
 function saveCustomAlerts(alerts) {
-  try {
-    localStorage.setItem(CUSTOM_ALERTS_KEY, JSON.stringify(alerts));
-    return true;
-  } catch (err) {
-    alert('저장 실패: ' + err.message);
-    return false;
-  }
+  _customAlertsCache = alerts;
+  API.saveAlerts(alerts).catch(function(err) {
+    try { localStorage.setItem(CUSTOM_ALERTS_KEY, JSON.stringify(alerts)); } catch(e) {}
+    console.warn('주의사항 저장 API 실패 (localStorage 폴백):', err);
+  });
+  return true;
 }
 
 function openAlertEditor(customId) {
@@ -3682,13 +3717,13 @@ function clearCustomAlerts() {
     return;
   }
   if (!confirm('사용자가 추가한 주의사항 ' + existing.length + '건을 모두 삭제하시겠습니까?\n(자동 표시 항목은 영향받지 않습니다)')) return;
-  try {
-    localStorage.removeItem(CUSTOM_ALERTS_KEY);
-    calculate();
-    alert('🗑️ 사용자 추가 주의사항이 모두 삭제되었습니다.');
-  } catch (err) {
-    alert('삭제 실패: ' + err.message);
-  }
+  _customAlertsCache = [];
+  API.deleteAlerts().catch(function(err) {
+    try { localStorage.removeItem(CUSTOM_ALERTS_KEY); } catch(e) {}
+    console.warn('주의사항 삭제 API 실패:', err);
+  });
+  calculate();
+  alert('🗑️ 사용자 추가 주의사항이 모두 삭제되었습니다.');
 }
 
 function saveApprovers() {
@@ -3793,11 +3828,9 @@ var EDIT_CONTENT_KEY = 'hwaseong_edit_content_v1';
 var editModeOn = false;
 
 function applyEditContent() {
-  // 저장된 편집 내용을 페이지에 반영
   try {
-    var raw = localStorage.getItem(EDIT_CONTENT_KEY);
-    if (!raw) return;
-    var data = JSON.parse(raw);
+    var data = _editContentCache;
+    if (!data) return;
     var els = document.querySelectorAll('[data-editable][data-ekey]');
     for (var i = 0; i < els.length; i++) {
       var key = els[i].getAttribute('data-ekey');
@@ -3845,8 +3878,15 @@ function saveEditContent() {
       data[key] = els[i].innerHTML;
     }
     data._savedAt = new Date().toISOString();
-    localStorage.setItem(EDIT_CONTENT_KEY, JSON.stringify(data));
-    alert('✅ 편집한 내용이 이 브라우저에 저장되었습니다.\n다음 접속 시에도 수정한 문구가 그대로 유지됩니다.');
+    _editContentCache = data;
+    API.putContent(data)
+      .then(function() {
+        alert('✅ 편집한 내용이 이 브라우저에 저장되었습니다.\n다음 접속 시에도 수정한 문구가 그대로 유지됩니다.');
+      })
+      .catch(function(e) {
+        try { localStorage.setItem(EDIT_CONTENT_KEY, JSON.stringify(data)); } catch(le) {}
+        alert('✅ 편집한 내용이 이 브라우저에 저장되었습니다.\n다음 접속 시에도 수정한 문구가 그대로 유지됩니다.');
+      });
   } catch (e) {
     alert('저장에 실패했습니다: ' + e.message + '\n(브라우저 시크릿 모드에서는 저장이 제한될 수 있습니다)');
   }
@@ -3854,13 +3894,12 @@ function saveEditContent() {
 
 function resetEditContent() {
   if (!confirm('편집한 모든 문구를 원래 상태로 되돌리시겠습니까?\n(저장된 편집 내용이 삭제되며 페이지가 새로고침됩니다)')) return;
-  try {
-    localStorage.removeItem(EDIT_CONTENT_KEY);
-    alert('↩️ 원래 문구로 복원되었습니다. 페이지를 새로고침합니다.');
-    location.reload();
-  } catch (e) {
-    alert('복원에 실패했습니다: ' + e.message);
-  }
+  _editContentCache = null;
+  API.deleteContent().catch(function() {
+    try { localStorage.removeItem(EDIT_CONTENT_KEY); } catch(e) {}
+  });
+  alert('↩️ 원래 문구로 복원되었습니다. 페이지를 새로고침합니다.');
+  location.reload();
 }
 
 function resetForm() {
@@ -4007,8 +4046,8 @@ function resetForm() {
 
   updateTypeUI();
   autoLoadApprovers();
-  applyEditContent();
-  calculate();
+  API.postLog().catch(function() {});
+  initFromAPI().then(function() { calculate(); });
 })();
 </script>
 

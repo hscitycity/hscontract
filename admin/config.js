@@ -1,5 +1,6 @@
-// 배포 시 이 파일의 API_BASE_URL을 Render 백엔드 URL로 교체하세요.
-// 예: https://hwaseong-contract-api.onrender.com
+// 배포 후 아래 Railway URL을 실제 백엔드 주소로 교체하세요.
 window.APP_CONFIG = {
-  API_BASE_URL: 'http://localhost:4000'
+  API_BASE_URL: (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:')
+    ? 'http://localhost:4000'
+    : 'https://your-backend.railway.app' // ← 실제 URL로 교체
 };
