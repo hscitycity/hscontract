@@ -1,0 +1,40 @@
+services:
+  # ── Backend: REST API ──────────────────────────────────────────
+  - type: web
+    name: hwaseong-contract-api
+    env: node
+    rootDir: backend
+    buildCommand: npm install --omit=dev
+    startCommand: node src/index.js
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+
+  # ── Frontend: 사용자 앱 ────────────────────────────────────────
+  - type: web
+    name: hwaseong-contract-frontend
+    env: static
+    rootDir: frontend
+    buildCommand: ""
+    staticPublishPath: .
+    plan: free
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache, no-store, must-revalidate
+
+  # ── Admin: 관리자 앱 ───────────────────────────────────────────
+  - type: web
+    name: hwaseong-contract-admin
+    env: static
+    rootDir: admin
+    buildCommand: ""
+    staticPublishPath: .
+    plan: free
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache, no-store, must-revalidate

@@ -1,0 +1,13 @@
+{
+  "name": "@hwaseong-contract-guide/frontend",
+  "version": "1.0.0",
+  "description": "사업담당자용 계약 절차 안내 - 사용자 앱",
+  "private": true,
+  "scripts": {
+    "dev": "serve . -p 3000 --no-clipboard",
+    "start": "serve . -p 3000"
+  },
+  "devDependencies": {
+    "serve": "^14.2.3"
+  }
+}

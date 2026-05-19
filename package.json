@@ -1,0 +1,18 @@
+{
+  "name": "hwaseong-contract-guide",
+  "version": "1.0.0",
+  "description": "화성시 계약 업무 길잡이 — 사업담당자용 계약 절차 안내 시스템",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend",
+    "admin"
+  ],
+  "scripts": {
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:admin": "npm run dev --workspace=admin",
+    "dev": "npm run dev:backend & npm run dev:frontend & npm run dev:admin",
+    "install:all": "npm install --workspaces"
+  }
+}

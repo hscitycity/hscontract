@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>화성시 계약 업무 길잡이 — 관리자</title>
+  <script src="config.js"></script>
+  <style>
+    body {
+      font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      margin: 0;
+      padding: 2rem;
+      background: #f5f7fa;
+      color: #1a1a2e;
+    }
+    header {
+      background: #1a3a5c;
+      color: #fff;
+      padding: 1.2rem 2rem;
+      border-radius: 8px;
+      margin-bottom: 2rem;
+    }
+    header h1 { margin: 0; font-size: 1.4rem; }
+    header p  { margin: 0.3rem 0 0; font-size: 0.85rem; opacity: 0.75; }
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>화성시 계약 업무 길잡이 — 관리자</h1>
+    <p>계약 절차 안내 콘텐츠 및 시스템 관리</p>
+  </header>
+  <div class="card">
+    <h2>관리자 대시보드</h2>
+    <p>이 화면은 관리자 전용 페이지입니다. 콘텐츠 관리 기능은 순차적으로 추가될 예정입니다.</p>
+    <ul>
+      <li>계약 절차 항목 관리</li>
+      <li>공지사항 관리</li>
+      <li>사용자 접근 통계</li>
+    </ul>
+  </div>
+  <script>
+    const API = window.APP_CONFIG?.API_BASE_URL || 'http://localhost:4000';
+    fetch(`${API}/health`)
+      .then(r => r.json())
+      .then(d => console.log('[admin] API 연결 확인:', d))
+      .catch(() => console.warn('[admin] API 서버에 연결할 수 없습니다.'));
+  </script>
+</body>
+</html>
